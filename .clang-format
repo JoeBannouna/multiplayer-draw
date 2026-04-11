@@ -1,0 +1,8 @@
+ColumnLimit: 100
+BasedOnStyle: Google
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AlignAfterOpenBracket: BlockIndent
+InsertNewlineAtEOF: true
+KeepEmptyLinesAtEOF: true

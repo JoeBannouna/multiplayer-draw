@@ -7,5 +7,5 @@
 #define MAX_PLAYERS 20
 #define BACKLOG MAX_PLAYERS  // how many pending connections queue will hold
 
-Player players[];
-pthread_mutex_t players_mutex;
+extern Player players[];
+extern pthread_mutex_t players_mutex;

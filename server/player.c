@@ -1,6 +1,7 @@
 #include "player.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "state.c"
 

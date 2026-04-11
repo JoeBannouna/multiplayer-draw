@@ -1,6 +1,8 @@
 #include "queue.h"
 
+#include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void QU_initalize(Queue* queue, uint16_t capacity) {
   queue->begin = 0;
@@ -55,7 +57,7 @@ MoveAction QU_dequeue(Queue* queue) {
 
   MoveAction target = queue->array[queue->begin];
 
-  queue->begin = (queue->begin + 1) % queue->capacity;
+  queue->begin = (uint16_t)(queue->begin + 1) % queue->capacity;
   queue->len--;
 
   return target;

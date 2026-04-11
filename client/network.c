@@ -1,11 +1,13 @@
 #include <arpa/inet.h>
-#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/socket.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
 // all headers
 #include "../core/types.h"
@@ -37,7 +39,7 @@ void handle_packet(HeaderMessage* header, void* buf) {
 
     printf(
         "Player %hd moving at %hd and %hd\n", (int16_t)ntohs((uint16_t)cast_helper->player_index),
-        (int16_t)ntohs((int16_t)cast_helper->x), ntohs(cast_helper->y)
+        (int16_t)ntohs((uint16_t)cast_helper->x), ntohs((uint16_t)cast_helper->y)
     );
 
     move_player_position(
@@ -142,7 +144,7 @@ void* network_worker_handler() {
 
   if (strnlen(host, 499) == 0) {
     printf("Select the host plz: ");
-    scanf("%s", host);
+    if (scanf("%s", host) == EOF) perror("host scanf");
   }
 
   memset(&hints, 0, sizeof hints);

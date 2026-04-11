@@ -36,6 +36,7 @@ void sleep_ms(int milliseconds) {
   nanosleep(&ts, NULL);
 }
 
+
 // the main program starting point: window initialization and event polling
 int main(int argc, char* argv[]) {
   if (argc >= 2) { strncpy(host, argv[1], 499); }

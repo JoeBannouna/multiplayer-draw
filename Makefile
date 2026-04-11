@@ -1,4 +1,3 @@
-
 CC      := clang
 # CFLAGS  := -std=gnu11 -Wall -Wextra -Werror -O2 -pthread $(shell pkg-config --cflags sdl2) -fsanitize=address,undefined
 CFLAGS  := -std=gnu11 -Wall -Wextra -Werror -O2 -pthread -Wconversion

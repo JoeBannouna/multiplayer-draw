@@ -1,12 +1,13 @@
 #include "player.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "globals.c"
 
 int join_player(PlayerPositionUpdatePacket packet) {
   int player_index = -1;
-  
+
   pthread_mutex_lock(&players_mutex);
   if (!players[packet.player_index].active) {
     printf("Added player at index %hd\n", packet.player_index);

@@ -1,5 +1,7 @@
 #include <netdb.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "../core/types.h"
 #include "player.h"

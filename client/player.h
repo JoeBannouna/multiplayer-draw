@@ -20,7 +20,9 @@ void move_player_position(int player_index, int16_t x, int16_t y);
 
 void mark_player_inactive(int player_index);
 
-// Streams the player position to all other players except the current player
-void stream_player_position(int player_index);
+void print_players();
+
+// // Streams the player event to all other players except the current player
+// void stream_player_event(int player_index);
 
 #endif

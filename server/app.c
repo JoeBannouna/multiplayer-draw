@@ -20,18 +20,16 @@
 Player players[MAX_PLAYERS];
 pthread_mutex_t players_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// data structure implementations
+// data structures/utils implementations
+#include "../core/network_utils.c"
 #include "player.c"
 
 // program components
-#include "client_handle.c"
+#include "handle_client.c"
 
 // get sockaddr, IPv4 or IPv6:
 void* get_in_addr(struct sockaddr* sa) {
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in*)sa)->sin_addr);
-  }
-
+  if (sa->sa_family == AF_INET) { return &(((struct sockaddr_in*)sa)->sin_addr); }
   return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 

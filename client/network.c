@@ -4,12 +4,13 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 // all headers
+#include "../core/network_utils.h"
 #include "../core/types.h"
 #include "queue.h"
 
@@ -22,62 +23,73 @@
 int sockfd;
 _Atomic bool is_network_thread_running = true;
 
-void handle_packet(HeaderMessage* header, void* buf) {
-  if (header->type == PLAYER_JOIN_EVENT) {
-    PlayerPositionUpdatePacket* cast_helper = (PlayerPositionUpdatePacket*)buf;
+void handle_server_packet(HeaderMessage* header, void* buf) {
+  printf("I have been called! %hd\n", header->type);
+  switch (header->type) {
+    case PLAYER_JOIN_EVENT: {
+      PlayerPositionUpdatePacket* cast_helper = (PlayerPositionUpdatePacket*)buf;
 
-    PlayerPositionUpdatePacket player = {
-        .player_index = (int16_t)ntohs((uint16_t)cast_helper->player_index),
-        .x = (int16_t)ntohs((uint16_t)cast_helper->x),
-        .y = (int16_t)ntohs((uint16_t)cast_helper->y),
-    };
+      PlayerPositionUpdatePacket player = {
+          .player_index = (int16_t)ntohs((uint16_t)cast_helper->player_index),
+          .x = (int16_t)ntohs((uint16_t)cast_helper->x),
+          .y = (int16_t)ntohs((uint16_t)cast_helper->y),
+      };
 
-    join_player(player);
+      join_player(player);
+      return;
+    }
+    case PLAYER_MOVE_UPDATE: {
+      PlayerPositionUpdatePacket* cast_helper = (PlayerPositionUpdatePacket*)buf;
 
-  } else if (header->type == PLAYER_MOVE_UPDATE) {
-    PlayerPositionUpdatePacket* cast_helper = (PlayerPositionUpdatePacket*)buf;
+      printf(
+          "Player %hd moving at %hd and %hd\n", (int16_t)ntohs((uint16_t)cast_helper->player_index),
+          (int16_t)ntohs((uint16_t)cast_helper->x), ntohs((uint16_t)cast_helper->y)
+      );
 
-    printf(
-        "Player %hd moving at %hd and %hd\n", (int16_t)ntohs((uint16_t)cast_helper->player_index),
-        (int16_t)ntohs((uint16_t)cast_helper->x), ntohs((uint16_t)cast_helper->y)
-    );
+      move_player_position(
+          (int16_t)ntohs((uint16_t)cast_helper->player_index),
+          (int16_t)ntohs((uint16_t)cast_helper->x), (int16_t)ntohs((uint16_t)cast_helper->y)
+      );
+      return;
+    }
+    case PLAYER_LEAVE_EVENT: {
+      uint16_t* cast_helper = (uint16_t*)buf;
+      uint16_t player_index = (uint16_t)ntohs(*cast_helper);
 
-    move_player_position(
-        (int16_t)ntohs((uint16_t)cast_helper->player_index),
-        (int16_t)ntohs((uint16_t)cast_helper->x), (int16_t)ntohs((uint16_t)cast_helper->y)
-    );
+      mark_player_inactive(player_index);
+      return;
+    }
+    case PLAYER_INDEX_ASSIGNMENT: {
+      int16_t* cast_helper = (int16_t*)buf;
+      uint16_t player_index = (uint16_t)ntohs(*cast_helper);
+
+      my_player_index = player_index;
+      return;
+    }
+    default: {
+      printf("Recieved a header message of unknown type\n");
+      return;
+    }
   }
-}
+  // if (header->type == PLAYER_JOIN_EVENT) {
+  // } else if (header->type == PLAYER_MOVE_UPDATE) {
+  //   PlayerPositionUpdatePacket* cast_helper = (PlayerPositionUpdatePacket*)buf;
 
-// keeps looping until n bytes are recieved
-// returns -1 for errors
-// returns 1 for connection closed
-// returns 0 on success
-int recv_exact(int sockfd, void* buf, size_t n) {
-  printf("Running recv_exact\n");
-  ssize_t total_bytes = 0;
-  char* ptr = (char*)buf;
+  //   printf(
+  //       "Player %hd moving at %hd and %hd\n",
+  //       (int16_t)ntohs((uint16_t)cast_helper->player_index),
+  //       (int16_t)ntohs((uint16_t)cast_helper->x), ntohs((uint16_t)cast_helper->y)
+  //   );
 
-  while ((size_t)total_bytes < n) {
-    ssize_t bytes = recv(sockfd, ptr + total_bytes, n - (size_t)total_bytes, 0);
-    if (bytes == -1) return -1;
-    if (bytes == 0) return 1;
-    total_bytes += bytes;
-  }
-
-  return 0;
+  //   move_player_position(
+  //       (int16_t)ntohs((uint16_t)cast_helper->player_index),
+  //       (int16_t)ntohs((uint16_t)cast_helper->x), (int16_t)ntohs((uint16_t)cast_helper->y)
+  //   );
+  // }
 }
 
 void* receive_server_updates() {
   while (is_network_thread_running) {
-    // move this part to updates_listener_thread and wrap it in a while loop
-    // ssize_t numbytes;
-    // char buf[MAXDATASIZE];
-    // if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
-    //   perror("recv");
-    //   exit(1);
-    // }
-
     HeaderMessage header;
     int status = recv_exact(sockfd, &header, sizeof(HeaderMessage));
     if (status == 1) {
@@ -93,7 +105,7 @@ void* receive_server_updates() {
     header.type = ntohs(header.type);
 
     if (header.length == 0) {
-      handle_packet(&header, NULL);
+      handle_server_packet(&header, NULL);
       continue;
     }
 
@@ -113,17 +125,7 @@ void* receive_server_updates() {
       break;
     }
 
-    handle_packet(&header, body);
-
-    // if (numbytes == 0) {
-    //   printf("Connection closed!\n");
-    //   is_network_thread_running = false;
-    //   break;
-    // }
-
-    // buf[numbytes] = '\0';
-
-    // printf("client: received '%s'\n", buf);
+    handle_server_packet(&header, body);
   }
 
   return NULL;
@@ -203,16 +205,16 @@ void* network_worker_handler() {
   pthread_create(&updates_listener_thread, NULL, receive_server_updates, NULL);
 
   while (is_network_thread_running) {
-    pthread_mutex_lock(&actions_queue_mutex);
+    pthread_mutex_lock(&actions_queue.mutex);
     while (QU_is_empty(&actions_queue)) {
-      pthread_cond_wait(&actions_queue_cond, &actions_queue_mutex);
+      pthread_cond_wait(&actions_queue.cond, &actions_queue.mutex);
     }
 
     printf("Dequeueing\n");
 
     MoveAction data = QU_dequeue(&actions_queue);
 
-    pthread_mutex_unlock(&actions_queue_mutex);
+    pthread_mutex_unlock(&actions_queue.mutex);
 
     data.x = (int16_t)htons((uint16_t)data.x);
     data.y = (int16_t)htons((uint16_t)data.y);

@@ -35,3 +35,16 @@ void mark_player_inactive(int player_index) {
   players[player_index].active = false;
   pthread_mutex_unlock(&players_mutex);
 }
+
+void print_players() {
+  printf("PLAYER CONFIGURATION ");
+
+  pthread_mutex_lock(&players_mutex);
+  for (size_t i = 0; i < MAX_PLAYERS; i++) {
+    if (players[i].active) printf("1 ");
+    else printf("0 ");
+  }
+  pthread_mutex_unlock(&players_mutex);
+
+  printf("\n");
+}

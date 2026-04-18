@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
+set(CMAKE_C_COMPILER clang)
+# set(CMAKE_C_COMPILER gcc)
+
 project(multiplayer-draw C)
 
 # Find SDL2 (installed via apt)

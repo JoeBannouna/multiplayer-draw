@@ -1,10 +1,16 @@
 #include "queue.h"
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void QU_initalize(Queue* queue, uint16_t capacity) {
+  // queue->mutex = PTHREAD_MUTEX_INITIALIZER;
+  // queue->cond = PTHREAD_COND_INITIALIZER;
+
+  pthread_mutex_init(&queue->mutex, NULL);
+  pthread_cond_init(&queue->cond, NULL);
+
   queue->begin = 0;
   queue->end = 0;
   queue->len = 0;
@@ -16,6 +22,12 @@ void QU_initalize(Queue* queue, uint16_t capacity) {
   } else printf("Allocated queue of total array size %ld bytes\n", capacity * sizeof(MoveAction));
 
   queue->capacity = capacity;
+}
+
+void QU_destroy(Queue* queue) {
+  pthread_mutex_destroy(&queue->mutex);
+  pthread_cond_destroy(&queue->cond);
+  free(queue->array);
 }
 
 // enqueue at end of the queue

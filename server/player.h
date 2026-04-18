@@ -1,8 +1,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
   int32_t sock_fd;
@@ -12,7 +12,7 @@ typedef struct {
 
 void print_players();
 
-// registers a player 
+// registers a player
 // returns player index on success
 // returns -1 on failure
 int16_t register_player(int fd);
@@ -23,6 +23,8 @@ void move_player_position(int player_index, int16_t x, int16_t y);
 void mark_player_inactive(int player_index);
 
 // Streams the player position to all other players except the current player
-void stream_player_position(int player_index);
+void stream_player_event(
+    int player_index, HeaderMessage* send_header, void* payload, size_t payload_size
+);
 
 #endif

@@ -86,28 +86,24 @@ int main(int argc, char* argv[]) {
 
   // 2. Create the window
   window = SDL_CreateWindow("SDL2 Window", 800, 600, 0);
-
   if (window == NULL) {
     fprintf(stderr, "Window could not be created! SDL_Error: %s\n", SDL_GetError());
     SDL_Quit();
     return 1;
   }
 
-  // 3. Create a renderer for hardware accelerated rendering (modern approach)
-  renderer = SDL_CreateRenderer(
-      window,  // Window to render to
-      NULL     // Initialize the first supported rendering driver
-               // SDL_RENDERER_ACCELERATED // Use hardware acceleration
-               // SDL_RENDERER_ACCELERATED |
-               //     SDL_RENDERER_PRESENTVSYNC // Use hardware acceleration
-               // SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER
-  );
-
+  // 3. Create a renderer
+  renderer = SDL_CreateRenderer(window, NULL);
   if (renderer == NULL) {
     fprintf(stderr, "Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 1;
+  }
+
+  // Try adaptive vsync first, fall back to standard
+  if (!SDL_SetRenderVSync(renderer, SDL_RENDERER_VSYNC_ADAPTIVE)) {
+      SDL_SetRenderVSync(renderer, 1);
   }
 
   //  Load an image into RAM (Surface)

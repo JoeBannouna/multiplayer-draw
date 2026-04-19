@@ -125,29 +125,22 @@ void USQ_loop_strokes(UncommittedStrokesQueue* q) {
   }
 }
 
-void USQ_undo_stroke(UncommittedStrokesQueue* q, uint16_t player_index) {
+void USQ_undo_stroke(UncommittedStrokesQueue* q, StrokeManager* manager, uint16_t player_index) {
   // Iterate backwards from the most recently added stroke
-  printf("%u\n", player_index);
-    printf("%p\n", q);
-  // for (size_t j = 0; j < q->len; j++) {
-  //   size_t i = q->len - 1 - j;
-  //   printf("%lu\n", i);
+  for (size_t j = 0; j < q->len; j++) {
+    size_t i = q->len - 1 - j;
 
-  //   // UncommittedStroke* curr = q->array[(q->begin + i) % q->capacity];
-  //   // printf("%p\n", curr);
+    UncommittedStroke* curr = q->array[(q->begin + i) % q->capacity];
+    if (curr->stroke.player_index != player_index) continue;
 
-  //   // if (curr->stroke.player_index != player_index) continue;
+    if (!curr->stroke.undo) {
+      // Case 2: found the most recent undoable stroke for this player
+      Stroke* stroke_ptr = &curr->stroke;
+      stroke_ptr->undo = true;
+      return;
+    }
+  }
 
-  //   // if (!curr->stroke.undo) {
-  //   //   // Case 2: found the most recent undoable stroke for this player
-  //   //   Stroke* stroke_ptr = &curr->stroke;
-  //   //   stroke_ptr->undo = true;
-  //   //   return;
-  //   // }
-  // }
-
-  // Case 1 & 3: no undoable uncommitted stroke found — fall back to committed
-  // USQ_undo_committed_stroke(q, player_index); // or however you call it
-  // printf("Undid something with player index = %d\n", player_index);
-  return;
+  // If no undoable uncommitted stroke found — fall back to committed
+  SM_undo_stroke(manager, player_index);
 }

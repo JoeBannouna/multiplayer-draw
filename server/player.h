@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
+
+#include "../core/types.h"
 
 typedef struct {
   int32_t sock_fd;

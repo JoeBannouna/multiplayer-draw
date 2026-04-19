@@ -64,6 +64,7 @@ void handle_server_packet(HeaderMessage* header, void* buf) {
       uint16_t player_index = (uint16_t)ntohs(*cast_helper);
 
       my_player_index = player_index;
+      printf("Assigned my unique index to be %d\n", my_player_index);
       return;
     }
     default: {
@@ -71,21 +72,6 @@ void handle_server_packet(HeaderMessage* header, void* buf) {
       return;
     }
   }
-  // if (header->type == PLAYER_JOIN_EVENT) {
-  // } else if (header->type == PLAYER_MOVE_UPDATE) {
-  //   PlayerPositionUpdatePacket* cast_helper = (PlayerPositionUpdatePacket*)buf;
-
-  //   printf(
-  //       "Player %hd moving at %hd and %hd\n",
-  //       (int16_t)ntohs((uint16_t)cast_helper->player_index),
-  //       (int16_t)ntohs((uint16_t)cast_helper->x), ntohs((uint16_t)cast_helper->y)
-  //   );
-
-  //   move_player_position(
-  //       (int16_t)ntohs((uint16_t)cast_helper->player_index),
-  //       (int16_t)ntohs((uint16_t)cast_helper->x), (int16_t)ntohs((uint16_t)cast_helper->y)
-  //   );
-  // }
 }
 
 void* receive_server_updates() {
@@ -193,16 +179,27 @@ void* network_worker_handler() {
   // flag for main to start SDL2 window
   connected = true;
 
-  HeaderMessage header;
-  header.length = htons(sizeof(MoveAction));
-  header.type = htons(MOVE_ACTION);  // move action type
+  /// --- send the username of the player to the server ---
+  HeaderMessage send_header;
 
-  // spawn a different thread for listening to server updates and adding the
-  // updates to the queue so that the main thread can dequeue server updates and
-  // show them on the UI
+  // TODO: the size of the username is hardcoded to 50 here
+  size_t username_len = strnlen(global_argv[2], 50);
+  printf("Sending a %ld byte username\n", username_len);
+  send_header =
+      (HeaderMessage){.length = htons(username_len), .type = htons(PLAYER_USERNAME_ASSIGNMENT)};
+
+  send(sockfd, &send_header, sizeof(send_header), 0);
+  send(sockfd, global_argv[2], username_len, 0);
+
+  /// --- spawn a different thread for listening to server updates and adding the
+  /// updates to the queue so that the main thread can dequeue server updates and
+  /// show them on the UI ---
 
   pthread_t updates_listener_thread;
   pthread_create(&updates_listener_thread, NULL, receive_server_updates, NULL);
+
+  // the sender thread goes through this loop
+  send_header = (HeaderMessage){.length = htons(sizeof(MoveAction)), .type = htons(MOVE_ACTION)};
 
   while (is_network_thread_running) {
     pthread_mutex_lock(&actions_queue.mutex);
@@ -219,7 +216,7 @@ void* network_worker_handler() {
     data.x = (int16_t)htons((uint16_t)data.x);
     data.y = (int16_t)htons((uint16_t)data.y);
 
-    send(sockfd, &header, sizeof(header), 0);
+    send(sockfd, &send_header, sizeof(send_header), 0);
     send(sockfd, &data, sizeof(data), 0);
   }
 

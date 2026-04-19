@@ -22,6 +22,7 @@ UncommittedStrokesQueue uncommitted_strokes_queue;
 bool connected = false;
 char host[500] = "";
 uint16_t my_player_index;
+char** global_argv;
 
 Player players[MAX_PLAYERS];
 pthread_mutex_t players_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -45,11 +46,13 @@ void sleep_ms(int milliseconds) {
 
 // the main program starting point: window initialization and event polling
 int main(int argc, char* argv[]) {
-  if (argc >= 2) { strncpy(host, argv[1], 499); }
+  // if (argc >= 2) { strncpy(host, argv[1], 499); }
+  // TODO: Find a nicer way to do this. perhaps load a window first and ask user to type it in
+  // Even better would be to cache in the username and all the hosts the user connects to
+  if (argc < 3) { printf("Usage: ./build/client localhost username\n"); return 0; }
+  strncpy(host, argv[1], 499);
 
-  // int *array = malloc(sizeof(int) * 10);
-  // free(array);
-  // return array[5]; // BOOM
+  global_argv = argv;
 
   SM_initalize(&stroke_manager, 128);
   USQ_initalize(&uncommitted_strokes_queue, 16);
@@ -103,7 +106,7 @@ int main(int argc, char* argv[]) {
 
   // Try adaptive vsync first, fall back to standard
   if (!SDL_SetRenderVSync(renderer, SDL_RENDERER_VSYNC_ADAPTIVE)) {
-      SDL_SetRenderVSync(renderer, 1);
+    SDL_SetRenderVSync(renderer, 1);
   }
 
   //  Load an image into RAM (Surface)
@@ -129,8 +132,6 @@ int main(int argc, char* argv[]) {
   SDL_FRect dstRects[MAX_PLAYERS];
 
   for (size_t i = 0; i < MAX_PLAYERS; i++) {
-    // dstRects[i].x = 100;  // Position X
-    // dstRects[i].y = 100;  // Position Y
     dstRects[i].w = 64;  // Width
     dstRects[i].h = 64;  // Height
   }
@@ -169,7 +170,7 @@ int main(int argc, char* argv[]) {
           case SDLK_Z: {
             if (keyboard_state[SDL_SCANCODE_LCTRL]) {
               printf("Attempting undo\n");
-              USQ_undo_stroke(&uncommitted_strokes_queue, my_player_index);
+              USQ_undo_stroke(&uncommitted_strokes_queue, &stroke_manager, my_player_index);
             }
             break;
           }

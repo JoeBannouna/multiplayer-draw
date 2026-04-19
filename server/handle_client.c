@@ -7,6 +7,7 @@
 #include "../core/network_utils.h"
 #include "../core/types.h"
 #include "player.h"
+#include "server_data.h"
 
 // global variable definitions
 #include "state.c"
@@ -48,8 +49,6 @@ bool handle_client_packet(int playerfd, int16_t player_index, HeaderMessage* hea
       );
 
       // stream the new player positiion to everyone
-      // stream_player_event(player_index);
-
       send_header.length = htons(sizeof(PlayerPositionUpdatePacket));
       send_header.type = htons(PLAYER_MOVE_UPDATE);  // position stream type
 
@@ -111,6 +110,43 @@ void* handle_client(void* new_fd_p) {
 
   print_players();
 
+  // /// --- SEND THE NEW CLIENT HIS INDEX BACK TO HIM ---
+  // HeaderMessage header_message = {
+  //     .length = htons(sizeof(int16_t)), .type = htons(PLAYER_INDEX_ASSIGNMENT)
+  // };
+
+  // if (send(players[player_index].sock_fd, &header_message, sizeof(HeaderMessage), 0) == -1)
+  //   perror("send");
+  // if (send(players[player_index].sock_fd, &player_index, sizeof(int16_t), 0) == -1)
+  // perror("send");
+
+  /// --- RECEIVE THE PLAYER NAME ---
+  HeaderMessage received_header;
+  ssize_t bytes = 0;
+  bytes = recv_exact(playerfd, &received_header, sizeof(HeaderMessage));
+
+  // format to host format
+  received_header =
+      (HeaderMessage){.length = ntohs(received_header.length), .type = ntohs(received_header.type)};
+
+  // TODO: Add something like max_username_length to config instead of hardcoded 50
+  if (received_header.type != PLAYER_USERNAME_ASSIGNMENT || received_header.length > 50) {
+    printf("Thread is terminating.\n");
+    mark_player_inactive(player_index);
+    close(playerfd);
+
+    return NULL;
+  }
+
+  // save or find the user
+  // TODO: hardcoded username buffer length
+  char username_buffer[50];
+  bytes = recv_exact(playerfd, username_buffer, received_header.length * sizeof(char));
+
+  int16_t player_unique_index =
+      SD_get_player_unique_index(&server_data, username_buffer, received_header.length);
+  int16_t player_unique_index_network_format = htons(player_unique_index);
+
   /// --- SEND THE NEW CLIENT HIS INDEX BACK TO HIM ---
   HeaderMessage header_message = {
       .length = htons(sizeof(int16_t)), .type = htons(PLAYER_INDEX_ASSIGNMENT)
@@ -118,7 +154,13 @@ void* handle_client(void* new_fd_p) {
 
   if (send(players[player_index].sock_fd, &header_message, sizeof(HeaderMessage), 0) == -1)
     perror("send");
-  if (send(players[player_index].sock_fd, &player_index, sizeof(int16_t), 0) == -1) perror("send");
+
+  // if (send(players[player_index].sock_fd, &player_index, sizeof(int16_t), 0) == -1)
+  // perror("send");
+  if (send(
+          players[player_index].sock_fd, &player_unique_index_network_format, sizeof(int16_t), 0
+      ) == -1)
+    perror("send");
 
   /// --- STREAMING PLAYER JOIN EVENT TO ALL OTHER PLAYERS AND
   /// STREAMING JOIN EVENTS TO THE CURRENT PLAYER FOR
@@ -171,8 +213,8 @@ void* handle_client(void* new_fd_p) {
   /// ---------
 
   /// --- ACCEPTING ACTIONS FROM PLAYERS ----
-  HeaderMessage received_header;
-  ssize_t bytes = 0;
+  // HeaderMessage received_header;
+  // ssize_t bytes = 0;
   while (true) {
     bytes = recv_exact(playerfd, &received_header, sizeof(HeaderMessage));
 
@@ -187,20 +229,6 @@ void* handle_client(void* new_fd_p) {
       printf("Goodbye, %d\n", playerfd);
       break;
     }
-
-    // This part is un-needed when we use recv_exact instead
-    // since it gets ingulfed in the bytes == -1 situation
-    // if (bytes != sizeof(HeaderMessage)) {
-    //   printf("Header length invalid! Closing connection with socket %d\n", playerfd);
-
-    //   mark_player_inactive(player_index);
-    //   close(playerfd);
-
-    //   return NULL;
-    // }
-
-    // make sure the header is recieved in full in case of connection
-    // interruptions
 
     if (!handle_client_packet(playerfd, player_index, &received_header)) break;
   }

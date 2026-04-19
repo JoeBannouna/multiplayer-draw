@@ -14,6 +14,7 @@ typedef enum : uint16_t {
   PLAYER_STROKE_END,
   PLAYER_POINT_ADD,
   PLAYER_INDEX_ASSIGNMENT,
+  PLAYER_USERNAME_ASSIGNMENT,
 } HeaderType;
 
 typedef struct __attribute__((packed)) {
@@ -40,7 +41,8 @@ typedef struct __attribute__((packed)) {
 } StrokePoint;
 
 typedef struct __attribute__((packed)) {
-  uint32_t points_len;
+  uint16_t points_len;
+  uint16_t previous_stroke_index; // for undos and redos
   uint16_t shape;  // allows for different brush types in the future ig
   uint16_t player_index;
   uint8_t color_r;

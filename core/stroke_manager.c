@@ -42,7 +42,6 @@ void SM_initalize(StrokeManager* manager, uint32_t initial_points_capacity) {
 }
 
 void double_strokes_capacity(StrokeManager* manager) {
-  // Resize to hold 10 integers
   Stroke* tmp_allocated_strokes =
       realloc(manager->strokes, manager->strokes_capacity * 2 * sizeof(Stroke));
   if (tmp_allocated_strokes != NULL) {
@@ -100,25 +99,21 @@ void SM_destroy(StrokeManager* manager) {
 
 bool SM_is_empty(StrokeManager* manager) { return manager->strokes_len == 0; }
 
-void SM_undo_stroke(StrokeManager* manager, int16_t player_index) {
-  // store a hashmap that goes like: player_index -> array_of_stroke_indexes
+void SM_undo_stroke(StrokeManager* manager, uint16_t player_index) {
+  // TODO: store a hashmap that goes like: player_index -> array_of_stroke_indexes
   // find the last stroke from the player
-  int32_t last_stroke_from_player_index = -1;
-  for (size_t j = manager->strokes_len; j > 0; j--) {
-    size_t i = j - 1;  // the actual index
+  for (size_t j = 0; j < manager->strokes_len; j++) {
+    size_t i = manager->strokes_len - 1 - j;  // the actual index
 
     if (manager->strokes[i].player_index == player_index) {
-      last_stroke_from_player_index = (int32_t)i;
-      break;
+      // last_stroke_from_player_index = (int32_t)i;
+
+      if (manager->strokes[i].undo == false) {
+        manager->strokes[i].undo = true;
+        break;
+      }
     }
   }
-
-  // loop over points with that stroke_id until stroke.points_len is done
-  if (last_stroke_from_player_index == -1) {
-    return;  // player didnt make any strokes yet
-  }
-  // remove the points
-  // move all other strokes and points to fill in the gap in heap memory
 }
 
 void SM_add_uncommitted_stroke(StrokeManager* manager, UncommittedStroke* uncommitted_stroke_ptr) {

@@ -16,5 +16,6 @@ extern uint16_t my_player_index;
 
 extern Player players[];
 extern pthread_mutex_t players_mutex;
+extern char** global_argv;
 
 #endif

@@ -13,16 +13,20 @@
 // all header files
 #include "../core/types.h"
 #include "player.h"
+#include "server_data.h"
 
 // global variables definitions
 #include "state.c"
 
 Player players[MAX_PLAYERS];
 pthread_mutex_t players_mutex = PTHREAD_MUTEX_INITIALIZER;
+ServerData server_data;
+char** global_argv;
 
 // data structures/utils implementations
 #include "../core/network_utils.c"
 #include "player.c"
+#include "server_data.c"
 
 // program components
 #include "handle_client.c"
@@ -33,7 +37,44 @@ void* get_in_addr(struct sockaddr* sa) {
   return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
+  if (argc < 2) {
+    printf("Please add a file location.\n");
+    return 0;
+  }
+
+  global_argv = argv;
+
+  FILE* fptr = fopen(argv[1], "r");
+
+  if (fptr == NULL) {
+    printf("File does not exist, creating one.\n");
+
+    fptr = fopen(argv[1], "w");
+    if (fptr == NULL) {
+      fprintf(stderr, "Error: could not create file '%s'\n", argv[1]);
+      return 1;
+    }
+
+    if (fprintf(fptr, "0") < 0) {
+      fprintf(stderr, "Error: failed to write default config\n");
+      fclose(fptr);
+      return 1;
+    }
+
+    fclose(fptr);
+
+    // Reopen for reading
+    fptr = fopen(argv[1], "r");
+    if (fptr == NULL) {
+      fprintf(stderr, "Error: could not reopen file '%s'\n", argv[1]);
+      return 1;
+    }
+  }
+
+  SD_reconstruct_memory(&server_data, fptr);
+  fclose(fptr);
+
   // listen on sock_fd, new connection on new_fd
   int sockfd, new_fd;
   struct addrinfo hints, *servinfo, *p;

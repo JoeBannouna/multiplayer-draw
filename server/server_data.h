@@ -5,8 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 typedef struct {
   int16_t players_len;

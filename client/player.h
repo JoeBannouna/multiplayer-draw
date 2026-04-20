@@ -7,10 +7,11 @@
 
 typedef struct {
   int16_t x, y;
+  int16_t unique_index;
   bool active;
 } Player;
 
-// registers a player 
+// registers a player
 // returns player index on success
 // returns -1 on failure
 int join_player(PlayerPositionUpdatePacket packet);

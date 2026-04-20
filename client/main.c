@@ -49,7 +49,10 @@ int main(int argc, char* argv[]) {
   // if (argc >= 2) { strncpy(host, argv[1], 499); }
   // TODO: Find a nicer way to do this. perhaps load a window first and ask user to type it in
   // Even better would be to cache in the username and all the hosts the user connects to
-  if (argc < 3) { printf("Usage: ./build/client localhost username\n"); return 0; }
+  if (argc < 3) {
+    printf("Usage: ./build/client localhost username\n");
+    return 0;
+  }
   strncpy(host, argv[1], 499);
 
   global_argv = argv;
@@ -183,15 +186,17 @@ int main(int argc, char* argv[]) {
           is_mouse_left_button_down = true;
           print_players();
           current_uncommitted_stroke = USQ_enqueue(
-              &uncommitted_strokes_queue, (Stroke){
-                                              .color_r = 255,
-                                              .color_g = 255,
-                                              .color_b = 255,
-                                              .points_len = 0,
-                                              .shape = 0,
-                                              .undo = false,
-                                              .player_index = my_player_index
-                                          }
+              &uncommitted_strokes_queue,
+              (Stroke){
+                  .color_r = 255,
+                  .color_g = 255,
+                  .color_b = 255,
+                  .points_len = 0,
+                  .shape = 0,
+                  .undo = false,
+                  // .player_index =
+              },
+              my_player_index
           );
         }
       }

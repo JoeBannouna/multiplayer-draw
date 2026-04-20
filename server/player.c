@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/socket.h>
 
 #include "../core/types.h"
 #include "state.c"

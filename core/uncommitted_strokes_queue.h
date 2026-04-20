@@ -3,8 +3,11 @@
 
 #include <pthread.h>
 
+// #include "object_pool.h"
 #include "stroke_manager.h"
 #include "types.h"
+
+#include "dynamic_arr.h"
 
 typedef struct {
   // an array of pointers to uncommittedStroke objects in fragmented memory
@@ -14,22 +17,20 @@ typedef struct {
   uint16_t capacity;  // 2 bytes
   uint16_t len;       // 2 bytes
   uint16_t begin;     // 2 bytes
+  EntryList active_strokes_list;
 } UncommittedStrokesQueue;
-
-// typedef struct {
-//   // queues[player_index] := the queue of strokes for that player
-//   UncommittedStrokesQueue* queues;
-//   // at[player_index] := the nth element the queue (current active stroke)
-//   int32_t* active_stroke_index_for_players;
-// } PlayerUncommittedStrokesQueue;
 
 void USQ_initalize(UncommittedStrokesQueue* q, uint16_t capacity);
 void USQ_grow(UncommittedStrokesQueue* q);
+// remove the active index marker and pass every stroke as the active stroke in SM (stroke manager)
 void USQ_drain(UncommittedStrokesQueue* q, StrokeManager* stroke_manager);
-UncommittedStroke* USQ_enqueue(UncommittedStrokesQueue* q, Stroke stroke);
+// marks it as the active index for that player
+UncommittedStroke* USQ_enqueue(UncommittedStrokesQueue* q, Stroke stroke, int16_t unique_player_index);
 void USQ_add_point(UncommittedStroke* uncommitted_stroke_ptr, StrokePoint point);
 void USQ_destroy(UncommittedStrokesQueue* q);
-void USQ_loop_strokes(UncommittedStrokesQueue* q);
-void USQ_undo_stroke(UncommittedStrokesQueue* q, StrokeManager* manager, uint16_t player_index);
+// go to the previous uncommitted stroke pointed to by the uncommitted stroke struct
+void USQ_undo_stroke(UncommittedStrokesQueue* q, StrokeManager* manager, uint16_t unique_player_index);
+// go to the next uncommitted stroke pointed to by the uncommitted stroke struct
+void USQ_redo_stroke(UncommittedStrokesQueue* q, StrokeManager* manager, uint16_t unique_player_index);
 
 #endif

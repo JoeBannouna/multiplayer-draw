@@ -4,12 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "dynamic_arr.h"
 #include "stroke_manager.h"
 #include "types.h"
 
 void USQ_initalize(UncommittedStrokesQueue* q, uint16_t capacity) {
   pthread_mutex_init(&q->mutex, NULL);
   pthread_cond_init(&q->cond, NULL);
+
+  list_init(&q->active_strokes_list);
 
   q->begin = 0;
   q->len = 0;
@@ -38,10 +41,6 @@ void USQ_grow(UncommittedStrokesQueue* q) {
 }
 
 void USQ_drain(UncommittedStrokesQueue* q, StrokeManager* stroke_manager) {
-  // while (first element in queue has finished=true) {
-  //    dequeue()
-  // }
-
   while (q->len > 0 && q->array[q->begin]->finished == true) {
     printf("Freeing a stroke\n");
     //  dequeue process
@@ -59,7 +58,9 @@ void USQ_drain(UncommittedStrokesQueue* q, StrokeManager* stroke_manager) {
   }
 }
 
-UncommittedStroke* USQ_enqueue(UncommittedStrokesQueue* q, Stroke stroke) {
+UncommittedStroke* USQ_enqueue(
+    UncommittedStrokesQueue* q, Stroke stroke, int16_t unique_player_index
+) {
   // returns the index of the stroke??
   if (q->len == q->capacity) { USQ_grow(q); }
 
@@ -87,6 +88,23 @@ UncommittedStroke* USQ_enqueue(UncommittedStrokesQueue* q, Stroke stroke) {
 
   q->array[target_index] = new_uncommitted_stroke_ptr;
   q->len++;
+
+  // keep track of the new stroke as the current active one
+
+  // TODO: it needs to link to the previos active stroke ..
+  // and have the previous stroke link to it
+  Entry* entry = list_find(&q->active_strokes_list, unique_player_index);
+  if (entry == NULL) {
+    list_add(&q->active_strokes_list, unique_player_index, new_uncommitted_stroke_ptr);
+    new_uncommitted_stroke_ptr->prev = NULL;
+    new_uncommitted_stroke_ptr->next = NULL;
+  } else {
+    entry->uncommitted_stroke_ptr->next = new_uncommitted_stroke_ptr;
+    new_uncommitted_stroke_ptr->prev = entry->uncommitted_stroke_ptr;
+    new_uncommitted_stroke_ptr->next = NULL;
+    list_replace(&q->active_strokes_list, unique_player_index, new_uncommitted_stroke_ptr);
+  }
+  new_uncommitted_stroke_ptr->unique_player_index = unique_player_index;
 
   return new_uncommitted_stroke_ptr;
 }
@@ -118,29 +136,30 @@ void USQ_destroy(UncommittedStrokesQueue* q) {
   // that may exist in the queue! along with their points, etc..
 }
 
-// TODO: remove this function as it probably doesn't need to exist
-void USQ_loop_strokes(UncommittedStrokesQueue* q) {
-  for (size_t i = 0; i < q->len; i++) {
-    printf("Yah %p\n", q->array[(q->begin + i) % q->capacity]);
+void USQ_undo_stroke(
+    UncommittedStrokesQueue* q, StrokeManager* manager, uint16_t unique_player_index
+) {
+  bool active_stroke_is_uncommitted = list_contains(&q->active_strokes_list, unique_player_index);
+
+  if (active_stroke_is_uncommitted) {
+    // // Iterate backwards from the most recently added stroke
+    // for (size_t j = 0; j < q->len; j++) {
+    //   size_t i = q->len - 1 - j;
+
+    //   UncommittedStroke* curr = q->array[(q->begin + i) % q->capacity];
+    //   if (curr->stroke.player_index != unique_player_index) continue;
+
+    //   if (!curr->stroke.undo) {
+    //     // Case 2: found the most recent undoable stroke for this player
+    //     Stroke* stroke_ptr = &curr->stroke;
+    //     stroke_ptr->undo = true;
+    //     return;
+    //   }
+    // }
+
+    list_undo(&q->active_strokes_list, unique_player_index);
+  } else {
+    // If no undoable uncommitted stroke found — fall back to committed
+    SM_undo_stroke(manager, unique_player_index);
   }
-}
-
-void USQ_undo_stroke(UncommittedStrokesQueue* q, StrokeManager* manager, uint16_t player_index) {
-  // Iterate backwards from the most recently added stroke
-  for (size_t j = 0; j < q->len; j++) {
-    size_t i = q->len - 1 - j;
-
-    UncommittedStroke* curr = q->array[(q->begin + i) % q->capacity];
-    if (curr->stroke.player_index != player_index) continue;
-
-    if (!curr->stroke.undo) {
-      // Case 2: found the most recent undoable stroke for this player
-      Stroke* stroke_ptr = &curr->stroke;
-      stroke_ptr->undo = true;
-      return;
-    }
-  }
-
-  // If no undoable uncommitted stroke found — fall back to committed
-  SM_undo_stroke(manager, player_index);
 }

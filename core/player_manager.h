@@ -3,6 +3,7 @@
 #define STROKE_MANAGER_H
 
 #include <pthread.h>
+#include <stdbool.h>
 
 // the single source of truth for current players connected to the server
 typedef struct {

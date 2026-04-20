@@ -21,5 +21,7 @@ bool SD_double_capacity(ServerData* server_data);
 // returns the index of the newly added player
 int16_t SD_add_player(ServerData* server_data, const char* name, int8_t name_len);
 int16_t SD_get_player_unique_index(ServerData* server_data, const char* name, int8_t name_len);
+// TODO: add a destroy function
+// TODO: possibly think of a more compact or robust way to store the names rather than the current fragmented approach
 
 #endif

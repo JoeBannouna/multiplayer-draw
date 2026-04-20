@@ -15,8 +15,8 @@ Using CMake:
 ```bash
 cmake -B build -DCMAKE_C_COMPILER=clang -DSANITIZE=ON
 cmake --build build
-# ./build/server
-# ./build/client localhost
+# ./build/server default.conf
+# ./build/client localhost username
 ```
 This will make both the client and server executables.
 

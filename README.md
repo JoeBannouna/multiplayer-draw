@@ -34,7 +34,8 @@ Due to the low-level nature of C, I advice you not to trust this code in a produ
 - [x] Migration to SDL3
 - [x] Player disconnection updates streamed to other players
 - [x] Client drawing functionality (basic)
-- [ ] Undo/redo drawing functionality
+- [ ] Local Undo/redo actions
+- [ ] Server-side Undo/redo actions
 - [ ] Canvas zoom/pan features (grid approach)
 - [ ] Drawing actions streamed to other players
 - [ ] Storing art files in an efficient format on the server and client

@@ -152,6 +152,9 @@ int main(int argc, char* argv[]) {
   bool is_mouse_left_button_down = false;
   UncommittedStroke* current_uncommitted_stroke;
 
+  // TODO: remove this after debugging is done
+  bool stop_draining_debug = false;
+
   // 4. Main game loop
   while (gameIsRunning) {
     Uint64 current_time = SDL_GetTicks();
@@ -172,8 +175,13 @@ int main(int argc, char* argv[]) {
         switch (event.key.key) {
           case SDLK_Z: {
             if (keyboard_state[SDL_SCANCODE_LCTRL]) {
-              printf("Attempting undo\n");
-              USQ_undo_stroke(&uncommitted_strokes_queue, &stroke_manager, my_player_index);
+              if (keyboard_state[SDL_SCANCODE_LSHIFT]) {
+                printf("Attempting redo\n");
+                USQ_redo_stroke(&uncommitted_strokes_queue, &stroke_manager, my_player_index);
+              } else {
+                printf("Attempting undo\n");
+                USQ_undo_stroke(&uncommitted_strokes_queue, &stroke_manager, my_player_index);
+              }
             }
             break;
           }
@@ -182,7 +190,7 @@ int main(int argc, char* argv[]) {
 
       // Example: Move with Keyboard
       if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-        if (event.button.button & SDL_BUTTON_LEFT) {
+        if (event.button.button == SDL_BUTTON_LEFT) {
           is_mouse_left_button_down = true;
           print_players();
           current_uncommitted_stroke = USQ_enqueue(
@@ -194,19 +202,25 @@ int main(int argc, char* argv[]) {
                   .points_len = 0,
                   .shape = 0,
                   .undo = false,
-                  // .player_index =
+                  .next_stroke_index = UINT16_MAX
               },
-              my_player_index
+              my_player_index, &stroke_manager
           );
+        }
+
+        if (event.button.button  == SDL_BUTTON_RIGHT) {
+          stop_draining_debug = true;
+          
         }
       }
 
       if (event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
         printf("Am i running?\n");
-        if (event.button.button & SDL_BUTTON_LEFT) {
+        if (event.button.button == SDL_BUTTON_LEFT) {
           is_mouse_left_button_down = false;
           current_uncommitted_stroke->finished = true;
-          USQ_drain(&uncommitted_strokes_queue, &stroke_manager);
+          if (stop_draining_debug == false) USQ_drain(&uncommitted_strokes_queue, &stroke_manager);
+          USQ_print_refs(&uncommitted_strokes_queue, &stroke_manager, my_player_index);
         }
       }
     }

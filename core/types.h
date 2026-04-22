@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "uncommitted_strokes_queue.h"
-
 typedef enum : uint16_t {
   MOVE_ACTION,
   CHAT,
@@ -91,17 +89,17 @@ typedef struct __attribute__((packed)) {
   uint8_t undo;  // bool → uint8_t for portability
 } WireStroke;
 
+typedef struct UncommittedStroke UncommittedStroke;
 
-
-typedef struct UncommittedStroke {
+struct UncommittedStroke {
   StrokePoint* points;
-  struct UncommittedStroke* next;
-  struct UncommittedStroke* prev;
+  UncommittedStroke* next;
+  UncommittedStroke* prev;
   Stroke stroke;  // contains the points_len number here
   uint32_t points_capacity;
-  uint32_t unique_player_index;
+  uint16_t unique_player_index;
   bool finished;
-} UncommittedStroke;
+};
 
 #define MAX_HEADER_LENGTH sizeof(PlayerPositionUpdatePacket)
 #define MAX_CHAT_SIZE 500
